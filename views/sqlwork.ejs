@@ -1,0 +1,203 @@
+<%- include('partials/header') %>
+
+<div class="row h-100">
+  <!-- Sidebar -->
+  <div class="col-md-4 col-lg-3 border-end bg-white" style="overflow-y: auto; max-height: 75vh;">
+    <h5 class="mt-3">📂 Pilih Folder SQL</h5>
+    <input type="file" id="folderInput" webkitdirectory directory multiple class="form-control mb-2 d-none">
+    <button id="selectFolderBtn" class="btn btn-sm btn-outline-success mb-2 w-100">📁 Pilih Folder</button>
+    <button id="rescanButton" class="btn btn-sm btn-outline-primary mb-3 w-100">🔄 Semak Fail Baru</button>
+
+    <input type="text" id="searchInput" placeholder="Cari fail..." class="form-control mb-2">
+
+    <select id="sortSelect" class="form-select form-select-sm mb-2">
+      <option value="newest">📅 Tarikh Terkini</option>
+      <option value="oldest">📅 Tarikh Terlama</option>
+      <option value="az">🔤 Nama (A-Z)</option>
+      <option value="za">🔤 Nama (Z-A)</option>
+    </select>
+
+    <!-- ✅ Fail count -->
+    <div id="fileCount" class="text-muted small mb-2 px-2">Total: 0 fail .sql</div>
+
+    <div id="fileList" class="list-group small"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="col-md-8 col-lg-9" style="overflow-y: auto; max-height: 75vh;">
+    <div class="d-flex align-items-center justify-content-between">
+      <h5 class="mt-3 mb-2">Kandungan Fail SQL</h5>
+      <button id="themeToggle" class="btn btn-sm btn-outline-secondary" title="Tukar Tema">🌙</button>
+    </div>
+    <div id="sqlContent" class="mt-3 text-break">
+      <p class="text-muted">Sila pilih fail di sebelah kiri untuk lihat kandungan.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Prism.js -->
+<link id="prism-theme" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
+
+<script>
+  const folderInput = document.getElementById('folderInput');
+  const selectFolderBtn = document.getElementById('selectFolderBtn');
+  const rescanButton = document.getElementById('rescanButton');
+  const fileList = document.getElementById('fileList');
+  const sqlContent = document.getElementById('sqlContent');
+  const searchInput = document.getElementById('searchInput');
+  const sortSelect = document.getElementById('sortSelect');
+  const themeToggle = document.getElementById('themeToggle');
+  const fileCount = document.getElementById('fileCount');
+  const prismThemeLink = document.getElementById('prism-theme');
+
+  const prismThemes = {
+    light: "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.css",
+    dark: "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css"
+  };
+
+  let allFiles = [];
+  let allFileElements = [];
+
+  selectFolderBtn.addEventListener('click', () => folderInput.click());
+  rescanButton.addEventListener('click', () => folderInput.click());
+
+  folderInput.addEventListener('change', function (event) {
+    const newFiles = Array.from(event.target.files)
+      .filter(f => /\.sql$/i.test(f.name)); // ✅ Only .sql files
+
+    let added = 0;
+
+    newFiles.forEach(file => {
+      const exists = allFiles.find(f => f.name === file.name && f.lastModified === file.lastModified);
+      if (!exists) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          allFiles.push({
+            name: file.name,
+            size: file.size,
+            lastModified: file.lastModified,
+            content: e.target.result
+          });
+          added++;
+          if (added === newFiles.length) {
+            renderFileList();
+            updateFileCount();
+          }
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    if (newFiles.length === 0 || added === 0) {
+      renderFileList();
+      updateFileCount();
+    }
+  });
+
+  sortSelect.addEventListener('change', () => {
+    renderFileList();
+    updateFileCount();
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterFileList(searchInput.value);
+  });
+
+  function renderFileList() {
+    const sortType = sortSelect.value;
+    const files = [...allFiles];
+
+    files.sort((a, b) => {
+      switch (sortType) {
+        case 'newest': return b.lastModified - a.lastModified;
+        case 'oldest': return a.lastModified - b.lastModified;
+        case 'az': return a.name.localeCompare(b.name);
+        case 'za': return b.name.localeCompare(a.name);
+      }
+    });
+
+    fileList.innerHTML = '';
+    allFileElements = [];
+
+    files.forEach(file => {
+      const div = document.createElement('div');
+      div.className = 'list-group-item list-group-item-action file-item';
+      div.dataset.filename = file.name.toLowerCase();
+
+      const fileSize = (file.size / 1024).toFixed(1) + ' KB';
+      const fileDate = new Date(file.lastModified).toLocaleString();
+
+      div.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <span class="me-1">📄</span>
+            <span class="file-name">${file.name}</span>
+            <div class="text-muted small">${fileSize} | ${fileDate}</div>
+          </div>
+        </div>
+      `;
+
+      div.style.whiteSpace = 'normal';
+      div.style.wordWrap = 'break-word';
+
+      div.addEventListener('click', () => {
+        document.querySelectorAll('.file-item').forEach(item => item.classList.remove('active'));
+        div.classList.add('active');
+        sqlContent.innerHTML = `
+          <pre class="language-sql"><code class="language-sql">${Prism.highlight(file.content, Prism.languages.sql, 'sql')}</code></pre>
+        `;
+      });
+
+      fileList.appendChild(div);
+      allFileElements.push({ element: div, name: file.name.toLowerCase() });
+    });
+
+    filterFileList(searchInput.value);
+  }
+
+  function filterFileList(query) {
+    const q = query.toLowerCase();
+    let visibleCount = 0;
+
+    allFileElements.forEach(({ element, name }) => {
+      const match = name.includes(q);
+      element.style.display = match ? '' : 'none';
+      const fileNameSpan = element.querySelector('.file-name');
+      if (match && q) {
+        const regex = new RegExp(`(${q})`, 'gi');
+        fileNameSpan.innerHTML = name.replace(regex, '<mark>$1</mark>');
+      } else {
+        fileNameSpan.innerHTML = name;
+      }
+      if (match) visibleCount++;
+    });
+
+    updateFileCount(visibleCount);
+  }
+
+  function updateFileCount(visible = null) {
+    const total = allFileElements.length;
+    const shown = visible !== null ? visible : total;
+    fileCount.textContent = (shown === total)
+      ? `Total: ${total} fail .sql`
+      : `${shown} daripada ${total} fail .sql dipaparkan`;
+  }
+
+  themeToggle.addEventListener('click', () => {
+    const current = localStorage.getItem('selectedTheme') || 'dark';
+    const newTheme = current === 'dark' ? 'light' : 'dark';
+    prismThemeLink.href = prismThemes[newTheme];
+    themeToggle.innerHTML = newTheme === 'dark' ? '🌙' : '🌞';
+    localStorage.setItem('selectedTheme', newTheme);
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('selectedTheme') || 'dark';
+    prismThemeLink.href = prismThemes[savedTheme];
+    themeToggle.innerHTML = savedTheme === 'dark' ? '🌙' : '🌞';
+  });
+</script>
+
+<%- include('partials/footer') %>
