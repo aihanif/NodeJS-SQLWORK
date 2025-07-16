@@ -18,8 +18,7 @@ SQLWork used to view the query on the page for developer puporses.
 
 ## 📂 Project Structure
 
-<pre lang="md"><code>## 📁 Project Structure ``` NodeJS-SQLWORK/ ├── public/ # Static assets (CSS, JS, images) ├── views/ # EJS template files │ ├── partials/ # Reusable EJS components (header, footer) │ ├── index.ejs # Homepage view │ └── sqlwork.ejs # SQL Work page ├── app.js # Main application entry point ├── package.json # Project metadata and dependencies └── .env # Environment variables (optional) ``` </code></pre>
-
+<pre><code>## 📁 Project Structure ``` NodeJS-SQLWORK/ ├── public/ # Static assets (CSS, JS, images) ├── views/ # EJS template files │ ├── partials/ # Reusable EJS components (header, footer) │ ├── index.ejs # Homepage view │ └── sqlwork.ejs # SQL Work page ├── app.js # Main application entry point ├── package.json # Project metadata and dependencies └── .env # Environment variables (optional) ``` </code></pre>
 ---
 
 ## 🛠️ Installation & Setup
