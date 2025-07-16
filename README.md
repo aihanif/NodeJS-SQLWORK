@@ -2,7 +2,7 @@
 
 1. NodeJS-SQLWORK
 This is a basic Node.js web application using Express and EJS as a template engine. The app renders simple EJS pages including static routes like `/` and `/sqlwork`.
-SQLWork used to view the query on the page for developer puporses.
+SQLWork used to view the query on the page for developer purposes.
 <img width="1766" height="905" alt="image" src="https://github.com/user-attachments/assets/ed5dab1e-9e2b-450d-aa06-75a30eef5ba1" />
 
 ---
